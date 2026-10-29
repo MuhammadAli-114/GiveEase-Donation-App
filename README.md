@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <p align="center">
   <h1 align="center">GiveEase</h1>
   <p align="center">
@@ -344,4 +343,3 @@ Built with ❤️ for Pakistan's charity ecosystem.
 =======
 # GiveEase-Donation-App
 Developed an Android donation and crowdfunding platform using Kotlin, Firebase, and MVVM, featuring donor and NGO verification, secure donation tracking, real-time chat and notifications, and transparent monetary and physical donation management.
->>>>>>> 16dc0cc16785ef28a8c4d990f966230f5e874121
