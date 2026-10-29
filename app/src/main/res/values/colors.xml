@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="onSurface">#212121</color>
+    <color name="onBackground">#212121</color>
+    <color name="gray">#9E9E9E</color>
+    <color name="textTertiary">#9E9E9E</color>
+    <color name="error">#F44336</color>
+
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="primary_blue">#1976D2</color>
+    <color name="primary_blue_dark">#1565C0</color>
+    <color name="light_gray">#F5F5F5</color>
+    <color name="chip_unselected">#E0E0E0</color>
+    <color name="chip_selected">#1976D2</color>
+
+    <color name="primary">#4CAF50</color>
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="primaryContainer">#E8F5E9</color>
+    <color name="onPrimaryContainer">#1B5E20</color>
+    <color name="secondary">#03A9F4</color>
+    <color name="onSecondary">#FFFFFF</color>
+    <color name="cardShadow">#33000000</color>
+    <color name="outline">#BDBDBD</color>
+    <color name="textPrimary">#000000</color>
+    <color name="textSecondary">#000000</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+    <color name="info">#2196F3</color>
+    <color name="progress">#66BB6A</color>
+    <color name="success_green">#2E7D32</color>
+    <color name="success_green_light">#A5D6A7</color>
+    <color name="primary_blue_light">#BBDEFB</color>
+    <color name="chatBubbleSender">#E0F2F1</color>
+    <color name="chatBubbleReceiver">#FFFFFF</color>
+    <color name="navSelected">#4CAF50</color>
+    <color name="navUnselected">#282626</color>
+    <color name="whatsapp_green">#25D366</color>
+    <color name="whatsapp_dark_green">#075E54</color>
+    <color name="whatsapp_teal">#128C7E</color>
+    <color name="whatsapp_light_green">#DCF8C6</color>
+    <color name="whatsapp_bg">#ECE5DD</color>
+    <color name="read_receipt_blue">#4FC3F7</color>
+    <color name="online_green">#4CAF50</color>
+    <color name="onSurfaceSecondary">#616161</color>
+    <color name="gray_light">#E0E0E0</color>
+    <color name="gray_dark">#666666</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#666666</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="background_light">#F5F7FA</color>
+
+    <!-- Impact Dashboard Colors -->
+    <color name="impact_gold">#FFB300</color>
+    <color name="impact_gold_light">#FFF8E1</color>
+    <color name="impact_bronze">#8D6E63</color>
+    <color name="impact_silver">#90A4AE</color>
+    <color name="impact_platinum">#7C4DFF</color>
+    <color name="blood_red">#E53935</color>
+    <color name="blood_red_light">#FFEBEE</color>
+    <color name="items_teal">#00897B</color>
+    <color name="items_teal_light">#E0F2F1</color>
+    <color name="badges_amber_light">#FFF8E1</color>
+    <color name="ngo_blue_light">#E3F2FD</color>
+    <color name="progress_track">#E8E8E8</color>
+    <color name="score_bg">#F0F7FF</color>
+
+</resources>

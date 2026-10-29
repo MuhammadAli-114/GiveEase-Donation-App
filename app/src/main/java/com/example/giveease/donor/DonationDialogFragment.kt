@@ -1,0 +1,472 @@
+package com.example.giveease.donor
+
+import android.net.Uri
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.giveease.databinding.FragmentDonationDialogBinding
+import com.example.giveease.ngo.CampaignData
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.example.giveease.utils.NotificationHelper
+import com.google.firebase.storage.FirebaseStorage
+import java.util.*
+
+class DonationDialogFragment : BottomSheetDialogFragment() {
+
+    private var _binding: FragmentDonationDialogBinding? = null
+    private val binding get() = _binding!!
+    private lateinit var campaign: CampaignData
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
+    private val storage = FirebaseStorage.getInstance()
+    private var donorName: String = ""
+    private var receiptImageUri: Uri? = null
+    private var itemPhotoUri: Uri? = null
+    private var ngoHeadquarterAddress: String = ""
+
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            receiptImageUri = uri
+            binding.ivReceiptPreview.setImageURI(uri)
+            binding.cardReceiptPreview.visibility = View.VISIBLE
+            binding.btnUploadReceipt.visibility = View.GONE
+        }
+    }
+
+    private val itemPhotoLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            itemPhotoUri = uri
+            binding.ivItemPreview.setImageURI(uri)
+            binding.cardItemPreview.visibility = View.VISIBLE
+            binding.btnUploadItemPhoto.visibility = View.GONE
+        }
+    }
+
+    companion object {
+        private const val ARG_CAMPAIGN = "campaign"
+
+        fun newInstance(campaign: CampaignData): DonationDialogFragment {
+            val fragment = DonationDialogFragment()
+            val args = Bundle()
+            args.putSerializable(ARG_CAMPAIGN, campaign)
+            fragment.arguments = args
+            return fragment
+        }
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentDonationDialogBinding.inflate(inflater, container, false)
+        firestore = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
+
+        campaign = arguments?.getSerializable(ARG_CAMPAIGN) as? CampaignData
+            ?: return binding.root
+
+        setupUI()
+        setupClickListeners()
+        loadDonorName()
+
+        return binding.root
+    }
+
+    private fun setupUI() {
+        binding.apply {
+            tvCampaignTitle.text = campaign.title
+            tvNgoName.text = campaign.ngoName
+            tvUnit.text = campaign.unit
+            val remaining = campaign.targetQuantity - campaign.currentQuantity
+            tvRemaining.text = "Remaining: $remaining ${campaign.unit}"
+            val progress = campaign.getProgress()
+            tvProgress.text = "${campaign.currentQuantity} / ${campaign.targetQuantity} ${campaign.unit} ($progress%)"
+
+            if (campaign.category == "Monetary Funds") {
+                llMonetarySection.visibility = View.VISIBLE
+                llPhysicalSection.visibility = View.GONE
+                fetchNgoBankDetails()
+            } else {
+                llMonetarySection.visibility = View.GONE
+                llPhysicalSection.visibility = View.VISIBLE
+                fetchNgoAddress()
+            }
+        }
+    }
+
+    private fun fetchNgoAddress() {
+        firestore.collection("users").document(campaign.ngoId).get()
+            .addOnSuccessListener { document ->
+                if (!isAdded || _binding == null) return@addOnSuccessListener
+                ngoHeadquarterAddress = document.getString("headquarters") ?: "Address not provided by NGO."
+                binding.tvNgoDropoffAddress.text = "NGO Address:\n$ngoHeadquarterAddress"
+            }
+    }
+
+    private fun fetchNgoBankDetails() {
+        firestore.collection("users").document(campaign.ngoId).get()
+            .addOnSuccessListener { document ->
+                if (!isAdded || _binding == null) return@addOnSuccessListener
+                
+                binding.llNgoBankDetailsContainer.removeAllViews()
+                
+                // Try new array format
+                val accounts = document.get("bankAccounts") as? List<Map<String, String>>
+                if (accounts != null && accounts.isNotEmpty()) {
+                    accounts.forEach { map ->
+                        addBankAccountView(
+                            map["bankName"] ?: "N/A",
+                            map["accountTitle"] ?: "N/A",
+                            map["accountNumber"] ?: "N/A"
+                        )
+                    }
+                } else {
+                    // Fallback to legacy
+                    val legacy = document.get("bankDetails") as? Map<String, String>
+                    if (legacy != null) {
+                        addBankAccountView(
+                            legacy["bankName"] ?: "N/A",
+                            legacy["accountTitle"] ?: "N/A",
+                            legacy["accountNumber"] ?: "N/A"
+                        )
+                    } else {
+                        val fallbackTv = android.widget.TextView(requireContext()).apply {
+                            text = "No bank details provided by NGO."
+                            textSize = 14f
+                            setTextColor(android.graphics.Color.parseColor("#33691E"))
+                        }
+                        binding.llNgoBankDetailsContainer.addView(fallbackTv)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                if (isAdded && _binding != null) {
+                    binding.llNgoBankDetailsContainer.removeAllViews()
+                    val fallbackTv = android.widget.TextView(requireContext()).apply {
+                        text = "Failed to load bank details."
+                        textSize = 14f
+                        setTextColor(android.graphics.Color.parseColor("#33691E"))
+                    }
+                    binding.llNgoBankDetailsContainer.addView(fallbackTv)
+                }
+            }
+    }
+
+    private fun addBankAccountView(bankName: String, title: String, number: String) {
+        val view = layoutInflater.inflate(com.example.giveease.R.layout.item_bank_account_copy, binding.llNgoBankDetailsContainer, false)
+        view.findViewById<android.widget.TextView>(com.example.giveease.R.id.tvBankName).text = "🏦 $bankName"
+        view.findViewById<android.widget.TextView>(com.example.giveease.R.id.tvAccountTitle).text = "Title: $title"
+        view.findViewById<android.widget.TextView>(com.example.giveease.R.id.tvAccountNumber).text = "Acc/IBAN: $number"
+        
+        view.findViewById<android.view.View>(com.example.giveease.R.id.btnCopy).setOnClickListener {
+            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Account Number", number)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "Account number copied to clipboard", Toast.LENGTH_SHORT).show()
+        }
+        
+        binding.llNgoBankDetailsContainer.addView(view)
+    }
+
+    private fun loadDonorName() {
+        val uid = auth.currentUser?.uid ?: return
+
+        firestore.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                donorName = document.getString("name") ?: "Anonymous"
+            }
+    }
+
+    private fun setupClickListeners() {
+        binding.apply {
+            btnCancel.setOnClickListener {
+                dismiss()
+            }
+
+            btnDonate.setOnClickListener {
+                validateAndDonate()
+            }
+
+            btnUploadReceipt.setOnClickListener {
+                imagePickerLauncher.launch("image/*")
+            }
+
+            btnRemoveReceipt.setOnClickListener {
+                receiptImageUri = null
+                cardReceiptPreview.visibility = View.GONE
+                btnUploadReceipt.visibility = View.VISIBLE
+            }
+
+            btnUploadItemPhoto.setOnClickListener {
+                itemPhotoLauncher.launch("image/*")
+            }
+
+            btnRemoveItemPhoto.setOnClickListener {
+                itemPhotoUri = null
+                cardItemPreview.visibility = View.GONE
+                btnUploadItemPhoto.visibility = View.VISIBLE
+            }
+
+            rgHandover.setOnCheckedChangeListener { _, checkedId ->
+                if (checkedId == com.example.giveease.R.id.rbDropoff) {
+                    tvNgoDropoffAddress.visibility = View.VISIBLE
+                    llPickupInfo.visibility = View.GONE
+                } else if (checkedId == com.example.giveease.R.id.rbPickup) {
+                    tvNgoDropoffAddress.visibility = View.GONE
+                    llPickupInfo.visibility = View.VISIBLE
+                }
+            }
+        }
+    }
+
+    private fun validateAndDonate() {
+        val quantityStr = binding.etQuantity.text.toString().trim()
+
+        if (quantityStr.isEmpty()) {
+            Toast.makeText(requireContext(), "Please enter quantity", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val quantity = quantityStr.toIntOrNull()
+        if (quantity == null || quantity <= 0) {
+            Toast.makeText(requireContext(), "Please enter valid quantity", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val remaining = campaign.targetQuantity - campaign.currentQuantity
+        if (quantity > remaining) {
+            Toast.makeText(requireContext(), "Quantity exceeds remaining amount ($remaining ${campaign.unit})", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        if (campaign.category == "Monetary Funds" && receiptImageUri == null) {
+            Toast.makeText(requireContext(), "Please upload a bank transfer receipt", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (campaign.category != "Monetary Funds") {
+            if (binding.rgCondition.checkedRadioButtonId == -1) {
+                Toast.makeText(requireContext(), "Please select item condition", Toast.LENGTH_SHORT).show()
+                return
+            }
+            if (itemPhotoUri == null) {
+                Toast.makeText(requireContext(), "Please upload a photo of the item", Toast.LENGTH_SHORT).show()
+                return
+            }
+            if (binding.rgHandover.checkedRadioButtonId == -1) {
+                Toast.makeText(requireContext(), "Please select a handover method", Toast.LENGTH_SHORT).show()
+                return
+            }
+            if (binding.rgHandover.checkedRadioButtonId == com.example.giveease.R.id.rbPickup) {
+                if (binding.etPickupPhone.text.toString().trim().isEmpty() || 
+                    binding.etPickupAddress.text.toString().trim().isEmpty()) {
+                    Toast.makeText(requireContext(), "Please provide complete pickup details", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            }
+        }
+
+        checkVerificationAndDonate(quantity)
+    }
+
+    private fun checkVerificationAndDonate(quantity: Int) {
+        val uid = auth.currentUser?.uid ?: return
+
+        firestore.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                val verificationStatus = document.getString("verificationStatus") ?: "pending"
+
+                if (verificationStatus == "verified") {
+                    processDonation(quantity)
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        "Please verify your identity to donate",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    dismiss()
+                }
+            }
+    }
+
+    private fun processDonation(quantity: Int) {
+        showLoading(true)
+        val isMonetary = campaign.category == "Monetary Funds"
+
+        if (isMonetary && receiptImageUri != null) {
+            // Upload receipt first
+            val receiptRef = storage.reference.child("receipts/${UUID.randomUUID()}.jpg")
+            receiptRef.putFile(receiptImageUri!!)
+                .addOnSuccessListener {
+                    receiptRef.downloadUrl.addOnSuccessListener { url ->
+                        saveDonationRecord(quantity, "Pending", "Bank Transfer", url.toString())
+                    }
+                }
+                .addOnFailureListener { e ->
+                    showLoading(false)
+                    Toast.makeText(requireContext(), "Failed to upload receipt: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        } else if (!isMonetary && itemPhotoUri != null) {
+            // Upload item proof first
+            val photoRef = storage.reference.child("item_proofs/${UUID.randomUUID()}.jpg")
+            photoRef.putFile(itemPhotoUri!!)
+                .addOnSuccessListener {
+                    photoRef.downloadUrl.addOnSuccessListener { url ->
+                        saveDonationRecord(quantity, "Pending Verification", "In-App", url.toString())
+                    }
+                }
+                .addOnFailureListener { e ->
+                    showLoading(false)
+                    Toast.makeText(requireContext(), "Failed to upload photo: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        } else {
+            // Fallback (should not happen due to validation)
+            saveDonationRecord(quantity, "Completed", "In-App", null)
+        }
+    }
+
+    private fun saveDonationRecord(quantity: Int, status: String, paymentMethod: String, receiptUrl: String?) {
+        val donationData = hashMapOf(
+            "donorId" to auth.currentUser?.uid,
+            "donorName" to donorName,
+            "campaignId" to campaign.id,
+            "campaignTitle" to campaign.title,
+            "ngoId" to campaign.ngoId,
+            "ngoName" to campaign.ngoName,
+            "quantity" to quantity,
+            "unit" to campaign.unit,
+            "message" to binding.etMessage.text.toString().trim(),
+            "timestamp" to System.currentTimeMillis(),
+            "status" to status,
+            "paymentMethod" to paymentMethod
+        )
+
+        if (receiptUrl != null) {
+            if (campaign.category == "Monetary Funds") {
+                donationData["receiptUrl"] = receiptUrl
+            } else {
+                donationData["itemPhotoUrl"] = receiptUrl
+            }
+        }
+
+        if (campaign.category != "Monetary Funds") {
+            val condition = when (binding.rgCondition.checkedRadioButtonId) {
+                com.example.giveease.R.id.rbNew -> "New"
+                com.example.giveease.R.id.rbUsed -> "Gently Used"
+                com.example.giveease.R.id.rbRepair -> "Needs Repair"
+                else -> "Unknown"
+            }
+            val handoverMethod = if (binding.rgHandover.checkedRadioButtonId == com.example.giveease.R.id.rbPickup) "Pickup" else "Drop-off"
+            
+            donationData["condition"] = condition
+            donationData["handoverMethod"] = handoverMethod
+            
+            if (handoverMethod == "Pickup") {
+                donationData["pickupPhone"] = binding.etPickupPhone.text.toString().trim()
+                donationData["pickupAddress"] = binding.etPickupAddress.text.toString().trim()
+            }
+        }
+
+        firestore.collection("donations")
+            .add(donationData)
+            .addOnSuccessListener { donationRef ->
+                if (status == "Completed") {
+                    updateCampaignProgress(quantity, donationRef.id)
+                } else {
+                    // Send notification to NGO
+                    NotificationHelper.sendNotification(
+                        userId = campaign.ngoId,
+                        title = "New Donation Received! 🎉",
+                        message = "$donorName wants to donate $quantity ${campaign.unit} to '${campaign.title}'. Please verify.",
+                        type = "donation",
+                        referenceId = campaign.id
+                    )
+
+                    // For pending donations, don't update campaign progress yet
+                    showLoading(false)
+                    showSuccessAndDismiss(quantity, donationRef.id, isPending = true)
+                }
+            }
+            .addOnFailureListener { e ->
+                showLoading(false)
+                Toast.makeText(requireContext(), "Failed to record donation: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun updateCampaignProgress(quantity: Int, donationId: String) {
+        val campaignRef = firestore.collection("campaigns").document(campaign.id)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(campaignRef)
+            val currentQuantity = snapshot.getLong("currentQuantity")?.toInt() ?: 0
+            val donorCount = snapshot.getLong("donorCount")?.toInt() ?: 0
+
+            val newQuantity = currentQuantity + quantity
+
+            transaction.update(campaignRef, "currentQuantity", newQuantity)
+            transaction.update(campaignRef, "donorCount", donorCount + 1)
+            transaction.update(campaignRef, "updatedAt", System.currentTimeMillis())
+
+            if (campaign.autoClose && newQuantity >= campaign.targetQuantity) {
+                transaction.update(campaignRef, "status", "Completed")
+            }
+        }.addOnSuccessListener {
+            showLoading(false)
+            showSuccessAndDismiss(quantity, donationId, isPending = false)
+        }.addOnFailureListener { e ->
+            showLoading(false)
+            Toast.makeText(requireContext(), "Failed to update campaign: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showSuccessAndDismiss(quantity: Int, donationId: String, isPending: Boolean) {
+        (parentFragment as? CampaignDetailsFragment)?.refreshCampaignData()
+
+        if (isAdded && context != null) {
+            val successMessage = if (isPending) {
+                if (campaign.category == "Monetary Funds") {
+                    "Thank you! Your donation is pending NGO verification of the receipt."
+                } else {
+                    "Thank you! Your item is submitted for NGO verification."
+                }
+            } else {
+                "Thank you! Your donation of $quantity ${campaign.unit} has been recorded."
+            }
+            Toast.makeText(
+                requireContext(),
+                successMessage,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
+        view?.postDelayed({
+            if (isAdded) {
+                dismiss()
+            }
+        }, 300)
+    }
+
+    private fun showLoading(show: Boolean) {
+        binding.apply {
+            btnDonate.isEnabled = !show
+            btnCancel.isEnabled = !show
+            btnDonate.text = if (show) "Processing..." else "Donate Now"
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}

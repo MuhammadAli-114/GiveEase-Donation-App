@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="6dp"
+    app:cardBackgroundColor="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Campaign Image with Gradient Overlay & Urgency Badge -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="220dp">
+
+            <ImageView
+                android:id="@+id/imgCampaign"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/sample_compaign1" />
+
+            <!-- Bottom gradient scrim -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/gradient_image_overlay" />
+
+            <!-- Urgency Badge (top-left, over image) -->
+            <TextView
+                android:id="@+id/tvUrgency"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Emergency"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="6dp"
+                android:layout_margin="14dp"
+                android:layout_gravity="top|start"
+                android:background="@drawable/urgency_badge_bg_emergency"
+                android:elevation="2dp" />
+
+            <!-- NGO Name overlaid on image bottom -->
+            <TextView
+                android:id="@+id/tvNgoName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NGO Name"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="16dp"
+                android:layout_marginBottom="12dp"
+                android:drawablePadding="6dp"
+                android:elevation="2dp" />
+        </FrameLayout>
+
+        <!-- Content Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="16dp">
+
+            <!-- Campaign Title -->
+            <TextView
+                android:id="@+id/tvCampaignTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Campaign Title"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="#1A237E"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:lineSpacingExtra="2dp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Description -->
+            <TextView
+                android:id="@+id/tvCampaignDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Campaign description goes here..."
+                android:textSize="13sp"
+                android:textColor="#78909C"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:lineSpacingExtra="2dp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Category Chip -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/tvCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Category"
+                android:textSize="12sp"
+                android:textColor="#1565C0"
+                app:chipBackgroundColor="#E3F2FD"
+                app:chipCornerRadius="18dp"
+                app:chipStrokeWidth="0dp"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Rounded Progress Bar -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:progress="75"
+                android:max="100"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:progressDrawable="@drawable/rounded_progress_bar"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Progress Info Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="14dp">
+
+                <TextView
+                    android:id="@+id/tvQuantity"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="350 / 500 Boxes"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A237E" />
+
+                <TextView
+                    android:id="@+id/tvProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="75%"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#2E7D32" />
+            </LinearLayout>
+
+            <!-- Bottom Row: Days Left + Donate Button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Days Left with icon -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_access_time"
+                        app:tint="#78909C"
+                        android:layout_marginEnd="5dp" />
+
+                    <TextView
+                        android:id="@+id/tvDaysLeft"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="15 days left"
+                        android:textSize="12sp"
+                        android:textColor="#78909C" />
+                </LinearLayout>
+
+                <!-- Donate Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDonate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="Donate Now"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="21dp"
+                    app:backgroundTint="#1565C0"
+                    android:paddingHorizontal="20dp"
+                    app:icon="@drawable/ic_heart1"
+                    app:iconSize="16dp"
+                    app:iconPadding="6dp"
+                    app:iconTint="@android:color/white" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
